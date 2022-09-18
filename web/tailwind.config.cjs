@@ -2,6 +2,11 @@
 module.exports = {
   content: ["./src/**/*.tsx", "./index.html"],
   theme: {
+    screens: {
+      lg: { max: "1343px" },
+      md: { max: "767px" },
+      sm: { max: "460px" },
+    },
     extend: {
       fontFamily: {
         sans: ["Inter", "sans-serif"],
