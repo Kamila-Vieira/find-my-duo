@@ -1,13 +1,13 @@
 import "./styles/main.css";
 import { useEffect, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-
+import axios from "axios";
 import logoImg from "./assets/logo_nlw_sports.svg";
 import { GameBanner } from "./components/GameBanner";
 import { CreateAdBanner } from "./components/CreateAdBanner";
-import { Form } from "./components/Form";
+import { CreateAdModal } from "./components/CreateAdModal";
 
-interface Game {
+export interface GameProps {
   id: string;
   bannerUrl: string;
   title: string;
@@ -16,14 +16,17 @@ interface Game {
   };
 }
 
+//TODO: V2 => Adicionar responsividade
+//TODO: V2 => Adicionar carousel na listagem de games https://keen-slider.io/
+//TODO: V2 => Adicionar login com discord ou twitch
+
 function App() {
-  const [games, setGames] = useState<Game[]>([]);
+  const [games, setGames] = useState<GameProps[]>([]);
 
   useEffect(() => {
-    fetch("http://localhost:3333/games")
-      .then((response) => response.json())
-      .then((data) => {
-        setGames(data);
+    axios("http://localhost:3333/games")
+      .then((response) => {
+        setGames(response.data);
       })
       .catch((error) => console.log(error));
   }, []);
@@ -41,16 +44,10 @@ function App() {
           return <GameBanner key={id} bannerUrl={bannerUrl} title={title} adsCount={ads} />;
         })}
       </div>
+
       <Dialog.Root>
         <CreateAdBanner />
-
-        <Dialog.Portal>
-          <Dialog.Overlay className="bg-black/60 inset-0 fixed" />
-          <Dialog.Content className="fixed bg-[#2a2634] py-8 px-10 text-white top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-lg w-full max-w-[480px] shadow-lg shadow-black/25">
-            <Dialog.Title className="text-3xl font-black">Publique um anúncio</Dialog.Title>
-            <Form />
-          </Dialog.Content>
-        </Dialog.Portal>
+        <CreateAdModal games={games} />
       </Dialog.Root>
     </div>
   );
