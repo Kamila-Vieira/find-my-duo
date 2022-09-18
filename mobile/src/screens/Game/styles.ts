@@ -41,7 +41,7 @@ export const styles = StyleSheet.create({
     fontSize: THEME.FONT_SIZE.SM,
     fontFamily: THEME.FONT_FAMILY.REGULAR,
   },
-  exptyListContent: {
+  emptyListContent: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",

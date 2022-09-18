@@ -9,6 +9,7 @@ import { GameParams } from "../../@types/navigation";
 import { Background } from "../../components/Background";
 import { Heading } from "../../components/Heading";
 import { DouCard, DouCardProps } from "../../components/DouCard";
+import { DouMatch } from "../../components/DouMatch";
 
 import { THEME } from "../../theme";
 import { styles } from "./styles";
@@ -16,6 +17,7 @@ import { useEffect, useState } from "react";
 
 export function Game() {
   const [duos, setDuos] = useState<DouCardProps[]>([]);
+  const [discordDuoSelected, setDiscordDuoSelected] = useState("");
   const navigation = useNavigation();
   const { params: game } = useRoute<Route<"game", GameParams>>();
 
@@ -23,10 +25,20 @@ export function Game() {
     navigation.goBack();
   }
 
+  async function getDiscordUser(adsId: string) {
+    fetch(`http://192.168.15.11:3333/ads/${adsId}/discord`)
+      .then((response) => response.json())
+      .then((data) => {
+        setDiscordDuoSelected(data.discord);
+      })
+      .catch((error) => console.log(error));
+  }
+
   useEffect(() => {
     fetch(`http://192.168.15.11:3333/games/${game.id}/ads`)
       .then((response) => response.json())
-      .then((data) => setDuos(data));
+      .then((data) => setDuos(data))
+      .catch((error) => console.log(error));
   }, []);
 
   return (
@@ -47,16 +59,24 @@ export function Game() {
         <FlatList
           data={duos}
           keyExtractor={(duo) => duo.id}
-          renderItem={({ item }) => <DouCard onConnect={() => {}} data={item} />}
+          renderItem={({ item }) => (
+            <DouCard onConnect={() => getDiscordUser(item.id)} data={item} />
+          )}
           showsHorizontalScrollIndicator={false}
           style={styles.containerList}
-          contentContainerStyle={duos.length === 0 ? styles.exptyListContent : styles.contentList}
+          contentContainerStyle={duos.length === 0 ? styles.emptyListContent : styles.contentList}
           ListEmptyComponent={() => (
             <Text style={styles.emptyListText}>
               Não há anúncios publicados para este jogo ainda!
             </Text>
           )}
           horizontal
+        />
+
+        <DouMatch
+          discord={discordDuoSelected}
+          visible={discordDuoSelected.length > 0}
+          onClose={() => setDiscordDuoSelected("")}
         />
       </SafeAreaView>
     </Background>
