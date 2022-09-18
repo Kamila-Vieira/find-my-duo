@@ -1,89 +1,93 @@
 import { Close } from "@radix-ui/react-dialog";
 import * as Checkbox from "@radix-ui/react-checkbox";
-import * as Select from "@radix-ui/react-select";
 import * as ToggleGroup from "@radix-ui/react-toggle-group";
 import axios from "axios";
-import { CaretUp, CaretDown, Check, GameController } from "phosphor-react";
+import { Check, GameController } from "phosphor-react";
+import { ChangeEvent, FormEvent, useState } from "react";
+import { useForm, SubmitHandler } from "react-hook-form";
+import { SelectGame } from "./SelectGame";
 import { Input } from "./Input";
-import { GameProps } from "../../App";
 import { daysOfWeek } from "./mocks";
-import { FormEvent, useState } from "react";
 
-interface FormProps {
-  games: GameProps[];
+export interface PublishAdProps {
+  useVoiceChannel: boolean;
+  weekDays: string[];
+  name: string;
+  discord: string;
+  yearsPlaying: number;
+  hourStart: string;
+  hourEnd: string;
+  gameId: string;
 }
-export function Form({ games }: FormProps) {
+
+export function Form() {
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    reset,
+    formState: { errors },
+  } = useForm<PublishAdProps>({ reValidateMode: "onChange" });
   const [weekDays, setWeekDays] = useState<string[]>([]);
   const [useVoiceChannel, setUseVoiceChannel] = useState(false);
+  const [gameId, setGameId] = useState("");
 
-  async function handleCreateAd(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  const onSubmit: SubmitHandler<PublishAdProps> = async (data) => {
+    if (!gameId) return;
 
-    const formData = new FormData(event.target as HTMLFormElement);
-    const data = Object.fromEntries(formData);
-
-    //TODO: V2 => Adicionar validação de campos https://react-hook-form.com/
+    const { name, discord, yearsPlaying, hourStart, hourEnd } = data;
 
     try {
-      await axios.post(`http://localhost:3333/games/${data.game}/ads`, {
+      await axios.post(`http://localhost:3333/games/${gameId}/ads`, {
         useVoiceChannel,
+        name,
+        discord,
+        hourStart,
+        hourEnd,
         weekDays: weekDays.map(Number),
-        name: data.name,
-        discord: data.discord,
-        yearsPlaying: Number(data.yearsPlaying),
-        hourStart: data.hourStart,
-        hourEnd: data.hourEnd,
+        yearsPlaying: Number(yearsPlaying),
       });
+      reset({
+        name: "",
+        discord: "",
+        yearsPlaying: 0,
+        hourStart: "",
+        hourEnd: "",
+      });
+      setUseVoiceChannel(false);
+      setWeekDays([]);
       console.log("Anúncio criado com sucesso");
     } catch (error) {
       console.log(error);
     }
-  }
+  };
 
   return (
-    <form className="mt-8 flex flex-col gap-4" onSubmit={handleCreateAd}>
-      <div className="flex flex-col gap-2">
-        <label htmlFor="game" className="font-semibold">
-          Qual o game?
-        </label>
-        <Select.Root name="game">
-          <Select.Trigger className="bg-zinc-900 h-11 py-2 px-4 rounded text-sm text-zinc-500 flex justify-between items-center">
-            <Select.Value id="game" placeholder="Selecione o game que deseja jogar" />
-            <CaretDown size={15} />
-          </Select.Trigger>
-          <Select.Portal>
-            <Select.Content>
-              <Select.ScrollUpButton>
-                <CaretUp size={12} className="text-white" />
-              </Select.ScrollUpButton>
-              <Select.Viewport className="bg-zinc-700 w-full p-2 rounded">
-                <Select.Group>
-                  {games.map(({ id, title }) => (
-                    <Select.Item
-                      key={id}
-                      value={id}
-                      className="flex items-center gap-1 py-2 px-4 text-white text-sm relative cursor-pointer"
-                    >
-                      <Select.ItemIndicator className="absolute left-0 w-2">
-                        <Check size={12} />
-                      </Select.ItemIndicator>
-                      <Select.ItemText>{title}</Select.ItemText>
-                    </Select.Item>
-                  ))}
-                </Select.Group>
-              </Select.Viewport>
-              <Select.ScrollDownButton>
-                <CaretDown size={12} className="text-white" />
-              </Select.ScrollDownButton>
-            </Select.Content>
-          </Select.Portal>
-        </Select.Root>
-      </div>
+    <form className="mt-8 flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
+      <SelectGame setGameId={setGameId} />
+
       <div className="flex flex-col gap-2">
         <label htmlFor="name" className="font-semibold">
           Seu nome (ou nickname)
         </label>
-        <Input id="name" name="name" type="text" placeholder="Como te chamam dentro do game?" />
+
+        <Input
+          register={register}
+          registerName="name"
+          registerProps={{
+            required: true,
+            onChange: (event: ChangeEvent<HTMLInputElement>) => {
+              setValue("name", event.target.value);
+            },
+          }}
+          style={
+            errors?.name && {
+              border: "1px solid red",
+            }
+          }
+          id="name"
+          placeholder="Como te chamam dentro do game?"
+        />
       </div>
 
       <div className="grid grid-cols-2 gap-6 md:flex md:flex-col md:gap-4">
@@ -92,8 +96,17 @@ export function Form({ games }: FormProps) {
             Joga há quantos anos?
           </label>
           <Input
+            register={register}
+            registerName="yearsPlaying"
+            registerProps={{
+              required: true,
+            }}
+            style={
+              errors?.yearsPlaying && {
+                border: "1px solid red",
+              }
+            }
             id="yearsPlaying"
-            name="yearsPlaying"
             type="number"
             min={0}
             placeholder="Tudo bem ser ZERO"
@@ -103,7 +116,30 @@ export function Form({ games }: FormProps) {
           <label htmlFor="discord" className="font-semibold">
             Qual seu Discord?
           </label>
-          <Input id="discord" name="discord" type="text" placeholder="Usuario#0000" />
+          <Input
+            register={register}
+            registerName="discord"
+            registerProps={{
+              required: true,
+              pattern: /#+\d{4}$/,
+              validate: (discord: string) => {
+                if (!/#+\d{4}$/.test(discord)) {
+                  return "Insira um usuário de discord válido";
+                }
+              },
+              onChange: (event: ChangeEvent<HTMLInputElement>) => {
+                setValue("discord", event.target.value);
+              },
+            }}
+            style={
+              errors?.discord && {
+                border: "1px solid red",
+              }
+            }
+            id="discord"
+            type="text"
+            placeholder="Usuario#0000"
+          />
         </div>
       </div>
 
@@ -137,23 +173,57 @@ export function Form({ games }: FormProps) {
             Qual horário do dia?
           </label>
           <div className="grid grid-cols-2 gap-2">
-            <Input id="hourStart" name="hourStart" type="time" placeholder="De" />
-            <Input id="hourEnd" name="hourEnd" type="time" placeholder="Até" />
+            <Input
+              register={register}
+              registerName="hourStart"
+              registerProps={{
+                required: true,
+                onChange: (event: ChangeEvent<HTMLInputElement>) => {
+                  setValue("hourStart", event.target.value);
+                },
+              }}
+              style={
+                errors?.hourStart && {
+                  border: "1px solid red",
+                }
+              }
+              id="hourStart"
+              type="time"
+              placeholder="De"
+            />
+            <Input
+              register={register}
+              registerName="hourEnd"
+              registerProps={{
+                required: true,
+                onChange: (event: ChangeEvent<HTMLInputElement>) => {
+                  setValue("hourEnd", event.target.value);
+                },
+              }}
+              style={
+                errors?.hourEnd && {
+                  border: "1px solid red",
+                }
+              }
+              id="hourEnd"
+              type="time"
+              placeholder="Até"
+            />
           </div>
         </div>
       </div>
 
       <label className="mt-2 flex gap-2 text-sm items-center">
         <Checkbox.Root
+          value={undefined}
+          checked={useVoiceChannel}
           onCheckedChange={(value) => {
             if (typeof value === "boolean") {
               setUseVoiceChannel(value);
             }
           }}
-          checked={useVoiceChannel}
           defaultChecked={false}
           id="useVoiceChannel"
-          name="useVoiceChannel"
           className="w-6 h-6 p-1 rounded bg-zinc-600"
         >
           <Checkbox.Indicator>
