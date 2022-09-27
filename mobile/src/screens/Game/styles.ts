@@ -12,6 +12,7 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 32,
     marginTop: 28,
+    paddingBottom: 28,
     justifyContent: "space-between",
   },
   logo: {
@@ -22,11 +23,16 @@ export const styles = StyleSheet.create({
     width: 20,
     height: 20,
   },
+  containerScroll: {
+    width: "100%",
+  },
+  contentScroll: {
+    alignItems: "center",
+    paddingBottom: 20,
+  },
   cover: {
-    width: 311,
+    width: "100%",
     height: 160,
-    borderRadius: 8,
-    marginTop: 32,
   },
   containerList: {
     width: "100%",
