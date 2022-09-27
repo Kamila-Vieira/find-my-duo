@@ -3,8 +3,10 @@ module.exports = {
   content: ["./src/**/*.tsx", "./index.html"],
   theme: {
     screens: {
-      lg: { max: "1343px" },
-      md: { max: "767px" },
+      "2xl": { max: "1343px" },
+      xl: { max: "1200px" },
+      lg: { max: "1024px" },
+      md: { max: "768px" },
       sm: { max: "460px" },
     },
     extend: {
